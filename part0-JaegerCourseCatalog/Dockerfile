@@ -11,9 +11,8 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 COPY --from=build /app/target/FutureXCourseCatalog-0.0.1-SNAPSHOT.jar app.jar
-COPY opentelemetry-javaagent.jar .
 
 EXPOSE 8002
 
-ENTRYPOINT ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
 
