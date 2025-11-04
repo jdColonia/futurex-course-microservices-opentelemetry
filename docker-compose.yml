@@ -9,6 +9,17 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
 
+  otel-collector:
+    image: otel/opentelemetry-collector:0.88.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4319:4317"   # OTLP gRPC receiver
+      - "4320:4318"   # OTLP HTTP receiver
+    depends_on:
+      - jaeger
+
   mysql:
     image: mysql:8.0
     environment:
@@ -29,14 +40,14 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/futurex_course_db?createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=techbankRootPsw
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
       - OTEL_TRACES_EXPORTER=otlp
     depends_on:
       - mysql
-      - jaeger
+      - otel-collector
 
   course-catalog:
     build:
@@ -46,14 +57,14 @@ services:
       - "8002:8002"
     environment:
       - COURSE_SERVICE_URL=http://course-app:8001
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
       - OTEL_TRACES_EXPORTER=otlp
     depends_on:
       - course-app
-      - jaeger
+      - otel-collector
 
 volumes:
   mysql_data:
