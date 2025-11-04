@@ -1,3 +1,4 @@
+version: '3'
 services:
   jaeger:
     image: jaegertracing/all-in-one:latest
@@ -29,6 +30,11 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ptechbankRootPsw"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   course-app:
     build:
@@ -45,9 +51,12 @@ services:
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
       - OTEL_TRACES_EXPORTER=otlp
+      - otel.exporter.otlp.endpoint=http://otel-collector:4317
     depends_on:
-      - mysql
-      - otel-collector
+      mysql:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
 
   course-catalog:
     build:
@@ -62,9 +71,12 @@ services:
       - OTEL_METRICS_EXPORTER=none
       - OTEL_LOGS_EXPORTER=none
       - OTEL_TRACES_EXPORTER=otlp
+      - otel.exporter.otlp.endpoint=http://otel-collector:4317
     depends_on:
-      - course-app
-      - otel-collector
+      course-app:
+        condition: service_started
+      otel-collector:
+        condition: service_started
 
 volumes:
   mysql_data:
